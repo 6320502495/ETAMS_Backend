@@ -249,6 +249,33 @@ app.put('/employee/:id', (req, res) => {
     }
 });
 
+//UpdateEmployeeRoleByID
+app.put('/employee/:id/role', (req, res) => {
+    const employeeId = req.params.id;
+    const role = req.body.role;
+
+    if (!employeeId) {
+        return res.status(400).send({ error: true, message: 'Please provide the employee ID and status to update' });
+    } else {
+        const sql = 'UPDATE EMPLOYEE SET employee_roles = ? WHERE employee_id = ?';
+
+        db.query(sql, [role, employeeId], (error, results, fields) => {
+            if (error) {
+                console.error('Database query error: ' + error.stack);
+                return res.status(500).send({ error: true, message: 'Error updating employee role' });
+            }
+
+            let message = "";
+            if (results.changedRows === 0) {
+                message = "Employee not found or data are the same";
+            } else {
+                message = "Employee updated successfully";
+            }
+            return res.send({ error: false, data: results, message: message });
+        });
+    }
+});
+
 //DeleteEmployeeByID
 app.delete('/employee/:id', (req, res) => {
     const employeeId = req.params.id;
@@ -293,6 +320,34 @@ app.get('/attendances', (req, res) => {
     })
 })
 
+//InsertAttendance
+app.post('/attendance', (req, res) => {
+    const {
+        employee_id,
+        attendance_date,
+        attendance_time,
+        attendance_type,
+        attendance_note
+    } = req.body;
+
+    if (!employee_id || !attendance_date || !attendance_time || !attendance_type) {
+        return res.status(400).send({ error: true, message: 'Please provide all required fields: employee_id, attendance_date, attendance_time, attendance_type' });
+    }
+    else {
+        const sql = 'INSERT INTO ATTENDANCE (employee_id, attendance_date, attendance_time, attendance_type, attendance_note) VALUES (?, ?, ?, ?, ?)';
+
+        db.query(sql, [employee_id, attendance_date, attendance_time, attendance_type, attendance_note], (error, results, fields) => {
+            if (error) {
+                console.error('Database query error: ' + error.stack);
+                return res.status(500).send({ error: true, message: 'Error creating attendance record' });
+            }
+
+            return res.send({ error: false, data: results, message: 'Attendance record created successfully' });
+        });
+    }
+});
+
+
 //GetAttendanceByEmployeeID
 app.get('/attendance/employee/:id', (req, res) => {
     let id = req.params.id;
@@ -331,6 +386,33 @@ app.get('/leaveRequests', (req, res) => {
     })
 })
 
+//InsertLeaveRequest
+app.post('/leaveRequest', (req, res) => {
+    const {
+        employee_id,
+        leave_request_type,
+        leave_request_duration,
+        leave_request_start_date,
+        leave_request_end_date,
+        leave_request_note,
+    } = req.body;
+
+    if (!employee_id || !leave_request_type || !leave_request_duration || !leave_request_start_date || !leave_request_end_date) {
+        return res.status(400).send({ error: true, message: 'Please provide all required fields: employee_id, leave_request_type, leave_request_duration, leave_request_start_date, leave_request_end_date' });
+    }
+
+    const sql = 'INSERT INTO LEAVE_REQUEST (employee_id, leave_request_type, leave_request_duration, leave_request_start_date, leave_request_end_date, leave_request_note, leave_request_status) VALUES (?, ?, ?, ?, ?, ?, ?)';
+
+    db.query(sql, [employee_id, leave_request_type, leave_request_duration, leave_request_start_date, leave_request_end_date, leave_request_note, "รอดำเนินการ"], (error, results, fields) => {
+        if (error) {
+            console.error('Database query error: ' + error.stack);
+            return res.status(500).send({ error: true, message: 'Error creating leave request' });
+        }
+
+        return res.send({ error: false, data: results, message: 'Leave request created successfully' });
+    });
+});
+
 //GetLeaveRequestByEmployeeID
 app.get('/leaveRequest/employee/:id', (req, res) => {
     let id = req.params.id;
@@ -351,6 +433,34 @@ app.get('/leaveRequest/employee/:id', (req, res) => {
         })
     }
 })
+
+//UpdateLeaveRequestStatusByID
+app.put('/leaveRequest/:id/status', (req, res) => {
+    const leaveRequestId = req.params.id;
+    const { leave_request_status } = req.body;
+
+    if (!leaveRequestId || !leave_request_status) {
+        return res.status(400).send({ error: true, message: 'Please provide leave request ID and leave request status to update' });
+    }
+
+    const sql = 'UPDATE LEAVE_REQUEST SET leave_request_status = ? WHERE leave_request_id = ?';
+
+    db.query(sql, [leave_request_status, leaveRequestId], (error, results, fields) => {
+        if (error) {
+            console.error('Database query error: ' + error.stack);
+            return res.status(500).send({ error: true, message: 'Error updating leave request status' });
+        }
+
+        let message = "";
+        if (results.changedRows === 0) {
+            message = "Leave request not found or status is the same";
+        } else {
+            message = "Leave request status updated successfully";
+        }
+        return res.send({ error: false, data: results, message: message });
+    });
+});
+
 
 
 app.listen(3000, () => {
