@@ -19,7 +19,7 @@ const db = mysql.createConnection({
 db.connect();
 
 //Login
-app.get('/login', (req, res) => {
+app.post('/login', (req, res) => {
     let id = req.body.id;
     let pwd = req.body.password;
 
@@ -307,7 +307,7 @@ app.delete('/employee/:id', (req, res) => {
 //Attendance
 //GetAllAttendances
 app.get('/attendances', (req, res) => {
-    db.query("SELECT * FROM EMPLOYEE NAUTURAL JOIN ATTENDANCE", (error, results, fields) => {
+    db.query("SELECT * FROM EMPLOYEE INNER JOIN ATTENDANCE ON EMPLOYEE.employee_id = ATTENDANCE.employee_id;", (error, results, fields) => {
         if (error) throw error;
 
         let message = "";
@@ -355,7 +355,7 @@ app.get('/attendance/employee/:id', (req, res) => {
     if (!id) {
         return res.status(400).send({ error: true, message: "Please provide id." });
     } else {
-        db.query("SELECT * FROM EMPLOYEE NAUTURAL JOIN ATTENDANCE WHERE ATTENDANCE.employee_id = ?", id, (error, results, fields) => {
+        db.query("SELECT * FROM EMPLOYEE JOIN ATTENDANCE WHERE EMPLOYEE.employee_id = ?", id, (error, results, fields) => {
             if (error) throw error;
 
             let message = "";
@@ -373,7 +373,7 @@ app.get('/attendance/employee/:id', (req, res) => {
 //LeaveRequest
 //GetAllLeaveRequests
 app.get('/leaveRequests', (req, res) => {
-    db.query('SELECT * FROM EMPLOYEE NAUTURAL JOIN LEAVE_REQUEST', (error, results, fields) => {
+    db.query('SELECT * FROM EMPLOYEE INNER JOIN LEAVE_REQUEST ON EMPLOYEE.employee_id = LEAVE_REQUEST.employee_id;', (error, results, fields) => {
         if (error) throw error;
 
         let message = "";
@@ -420,7 +420,7 @@ app.get('/leaveRequest/employee/:id', (req, res) => {
     if (!id) {
         return res.status(400).send({ error: true, message: "Please provide id." });
     } else {
-        db.query("SELECT * FROM EMPLOYEE NAUTURAL JOIN LEAVE_REQUEST WHERE LEAVE_REQUEST.employee_id = ?", id, (error, results, fields) => {
+        db.query("SELECT * FROM EMPLOYEE JOIN LEAVE_REQUEST WHERE EMPLOYEE.employee_id = ?", id, (error, results, fields) => {
             if (error) throw error;
 
             let message = "";
