@@ -3,11 +3,25 @@ const app = express();
 const mysql = require('mysql');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+// Define the directory to store uploaded files
+const uploadDir = './uploads/';
+
+// Create the upload directory if it doesn't exist
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
 
 
 const db = mysql.createConnection({
@@ -15,7 +29,7 @@ const db = mysql.createConnection({
     host: "localhost",
     password: "",
     database: "time_flow"
-})
+});
 db.connect();
 
 //Login
@@ -57,7 +71,12 @@ app.get('/employees', (req, res) => {
 })
 
 //InsertEmployee
-app.post('/employee', (req, res) => {
+app.post('/employee', upload.fields([
+    { name: 'employee_profile_img' },
+    { name: 'employee_personnel_id_img' },
+    { name: 'employee_transcript_img' },
+    { name: 'employee_contract' },
+]), (req, res) => {
     const {
         employee_id,
         employee_title,
@@ -78,15 +97,28 @@ app.post('/employee', (req, res) => {
         employee_tax_id,
         employee_login_id,
         employee_login_password,
-        employee_profile_img,
-        employee_personnel_id_img,
-        employee_transcript_img,
-        employee_contract,
     } = req.body;
+    console.log(req.files);
 
     if (!employee_id || !employee_title || !employee_name || !employee_surname || !employee_gender || !employee_department || !employee_position || !employee_tel || !employee_email || !employee_birthday || !employee_start_date || !employee_salary || !employee_personal_id || !employee_address || !employee_bank_account || !employee_bank_type || !employee_tax_id || !employee_login_id || !employee_login_password) {
         return res.status(400).send({ error: true, message: 'Please provide all required fields' });
     } else {
+        if (!req.files || Object.keys(req.files).length === 0) {
+            return res.status(400).send({ error: true, message: 'No files were uploaded.' });
+        }
+        // Get the uploaded PDF files as binary buffers
+        const employeeProfileImgBuffer = req.files['employee_profile_img'][0].buffer;
+        const employeePersonnelIdImgBuffer = req.files['employee_personnel_id_img'][0].buffer;
+        const employeeTranscriptImgBuffer = req.files['employee_transcript_img'][0].buffer;
+        const employeeContractBuffer = req.files['employee_contract'][0].buffer;
+
+        // Generate unique filenames for each uploaded file using employee_name
+        const profileImgFilename = `${employee_name}_profile-${Date.now()}.pdf`;
+        const personnelIdImgFilename = `${employee_name}_personnelId-${Date.now()}.pdf`;
+        const transcriptImgFilename = `${employee_name}_transcript-${Date.now()}.pdf`;
+        const contractImgFilename = `${employee_name}_contract-${Date.now()}.pdf`;
+
+        // Insert the file paths into the MySQL database
         const sql = `INSERT INTO EMPLOYEE (employee_id, employee_title, employee_name, employee_surname, employee_gender, employee_department, employee_position, employee_tel, employee_email, employee_birthday, employee_start_date, employee_salary, employee_personal_id, employee_address, employee_bank_account, employee_bank_type, employee_tax_id, employee_login_id, employee_login_password, employee_profile_img, employee_personnel_id_img, employee_transcript_img, employee_contract, employee_roles) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const values = [
             employee_id,
@@ -108,10 +140,10 @@ app.post('/employee', (req, res) => {
             employee_tax_id,
             employee_login_id,
             employee_login_password,
-            employee_profile_img,
-            employee_personnel_id_img,
-            employee_transcript_img,
-            employee_contract,
+            path.join(uploadDir, profileImgFilename), // Insert file path for profile image
+            path.join(uploadDir, personnelIdImgFilename), // Insert file path for personnel ID image
+            path.join(uploadDir, transcriptImgFilename), // Insert file path for transcript image
+            path.join(uploadDir, contractImgFilename), // Insert file path for contract
             "Employee",
         ];
 
@@ -120,10 +152,23 @@ app.post('/employee', (req, res) => {
                 console.error('Database query error: ' + error.stack);
                 return res.status(500).send({ error: true, message: 'Error adding employee to the database' });
             }
+
+            // If database insertion is successful, save the PDF files to storage
+            try {
+                fs.writeFileSync(path.join(uploadDir, profileImgFilename), employeeProfileImgBuffer);
+                fs.writeFileSync(path.join(uploadDir, personnelIdImgFilename), employeePersonnelIdImgBuffer);
+                fs.writeFileSync(path.join(uploadDir, transcriptImgFilename), employeeTranscriptImgBuffer);
+                fs.writeFileSync(path.join(uploadDir, contractImgFilename), employeeContractBuffer);
+            } catch (fileError) {
+                console.error('Error saving files to storage: ' + fileError.stack);
+                return res.status(500).send({ error: true, message: 'Error saving files to storage' });
+            }
+
             return res.send({ error: false, data: results, message: 'Employee successfully added' });
         });
     }
 });
+
 
 //GetEmployeeByID
 app.get('/employee/:id', (req, res) => {
