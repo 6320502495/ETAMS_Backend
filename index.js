@@ -339,14 +339,14 @@ app.put('/employee/:id', upload.fields([
 //UpdateEmployeeRoleByID
 app.put('/employee/:id/role', (req, res) => {
     const employeeId = req.params.id;
-    const role = req.body.role;
+    const { employee_roles } = req.body;
 
     if (!employeeId) {
         return res.status(400).send({ error: true, message: 'Please provide the employee ID and status to update' });
     } else {
         const sql = 'UPDATE EMPLOYEE SET employee_roles = ? WHERE employee_id = ?';
 
-        db.query(sql, [role, employeeId], (error, results, fields) => {
+        db.query(sql, [employee_roles, employeeId], (error, results, fields) => {
             if (error) {
                 console.error('Database query error: ' + error.stack);
                 return res.status(500).send({ error: true, message: 'Error updating employee role' });
@@ -540,12 +540,12 @@ app.get('/leaveRequest/employee/:id', (req, res) => {
 app.put('/leaveRequest/:id/status', (req, res) => {
     const leaveRequestId = req.params.id;
     const { leave_request_status } = req.body;
-
+    
     if (!leaveRequestId || !leave_request_status) {
         return res.status(400).send({ error: true, message: 'Please provide leave request ID and leave request status to update' });
     }
 
-    const sql = 'UPDATE LEAVE_REQUEST SET leave_request_status = ? WHERE leave_request_id = ?';
+    const sql = 'UPDATE LEAVE_REQUEST SET leave_request_status = ? WHERE leave_request_id  = ?';
 
     db.query(sql, [leave_request_status, leaveRequestId], (error, results, fields) => {
         if (error) {
